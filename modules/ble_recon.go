@@ -1,12 +1,12 @@
-// +build !windows !darwin
+// +build !windows
 
 package modules
 
 import (
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
-	golog "log"
+	// "io/ioutil"
+	// golog "log"
 	"time"
 
 	"github.com/bettercap/bettercap/log"
@@ -114,7 +114,7 @@ func (d *BLERecon) Configure() (err error) {
 		log.Info("Initializing BLE device ...")
 
 		// hey Paypal GATT library, could you please just STFU?!
-		golog.SetOutput(ioutil.Discard)
+		// golog.SetOutput(ioutil.Discard)
 		if d.gattDevice, err = gatt.NewDevice(defaultBLEClientOptions...); err != nil {
 			return err
 		}
