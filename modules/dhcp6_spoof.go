@@ -17,11 +17,6 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 
-	// TODO: refactor to use gopacket when gopacket folks
-	// will fix this > https://github.com/google/gopacket/issues/334
-	"github.com/mdlayher/dhcp6"
-	"github.com/mdlayher/dhcp6/dhcp6opts"
-
 	"github.com/evilsocket/islazy/tui"
 )
 
@@ -111,7 +106,7 @@ func (s *DHCP6Spoofer) Configure() error {
 	return nil
 }
 
-func (s *DHCP6Spoofer) dhcp6For(what dhcp6.MessageType, to dhcp6.Packet) (err error, p dhcp6.Packet) {
+func (s *DHCP6Spoofer) dhcp6For(what layers.DHCPv6MsgType, to *layers.DHCPv6) (err error, p *layers.DHCPv6) {
 	err, p = packets.DHCP6For(what, to, s.DUIDRaw)
 	if err != nil {
 		return
@@ -123,17 +118,23 @@ func (s *DHCP6Spoofer) dhcp6For(what dhcp6.MessageType, to dhcp6.Packet) (err er
 	return nil, p
 }
 
-func (s *DHCP6Spoofer) dhcpAdvertise(pkt gopacket.Packet, solicit dhcp6.Packet, target net.HardwareAddr) {
+func (s *DHCP6Spoofer) dhcpAdvertise(pkt gopacket.Packet, solicit *layers.DHCPv6, target net.HardwareAddr) {
 	pip6 := pkt.Layer(layers.LayerTypeIPv6).(*layers.IPv6)
 
 	fqdn := target.String()
-	if raw, found := solicit.Options[packets.DHCP6OptClientFQDN]; found && len(raw) >= 1 {
-		fqdn = string(raw[0])
+	for _, opt := range solicit.Options {
+		if opt.Code == layers.DHCPv65OptClientFQDN && opt.Size >= 1 {
+			fqdn = string(opt.Data)
+		}
 	}
 
-	log.Info("[%s] Got DHCPv6 Solicit request from %s (%s), sending spoofed advertisement for %d domains.", tui.Green("dhcp6"), tui.Bold(fqdn), target, len(s.Domains))
+	log.Info("[%s] got DHCPv6 solicit request from %s (%s), sending spoofed advertisement for %d domains.",
+		tui.Green("dhcp6"),
+		tui.Bold(fqdn),
+		target,
+		len(s.Domains))
 
-	err, adv := s.dhcp6For(dhcp6.MessageTypeAdvertise, solicit)
+	err, adv := s.dhcp6For(layers.DHCPv6MsgTypeAdverstise, solicit)
 	if err != nil {
 		log.Error("%s", err)
 		return
@@ -224,7 +225,7 @@ func (s *DHCP6Spoofer) dhcpAdvertise(pkt gopacket.Packet, solicit dhcp6.Packet, 
 	}
 }
 
-func (s *DHCP6Spoofer) dhcpReply(toType string, pkt gopacket.Packet, req dhcp6.Packet, target net.HardwareAddr) {
+func (s *DHCP6Spoofer) dhcpReply(toType string, pkt gopacket.Packet, req *layers.DHCPv6, target net.HardwareAddr) {
 	log.Debug("Sending spoofed DHCPv6 reply to %s after its %s packet.", tui.Bold(target.String()), toType)
 
 	err, reply := s.dhcp6For(dhcp6.MessageTypeReply, req)
@@ -318,40 +319,34 @@ func (s *DHCP6Spoofer) dhcpReply(toType string, pkt gopacket.Packet, req dhcp6.P
 	}
 }
 
-func (s *DHCP6Spoofer) duidMatches(dhcp dhcp6.Packet) bool {
-	if raw, found := dhcp.Options[dhcp6.OptionServerID]; found && len(raw) >= 1 {
-		if bytes.Equal(raw[0], s.DUIDRaw) {
-			return true
+func (s *DHCP6Spoofer) duidMatches(dhcp *layers.DHCPv6) bool {
+	for _, opt := range dhcp.Options {
+		if opt.Code == layers.DHCPv6OptServerID {
+			if bytes.Equal(opt.Data, s.DUIDRaw) {
+				return true
+			}
 		}
 	}
 	return false
 }
 
 func (s *DHCP6Spoofer) onPacket(pkt gopacket.Packet) {
-	var dhcp dhcp6.Packet
-	var err error
+	if eth := pkt.Layer(layers.LayerTypeEthernet).(*layers.Ethernet); eth != nil {
+		if d6 := pkt.Layer(layers.LayerTypeDHCPv6).(*layers.DHCPv6); d6 != nil {
+			switch d6.MsgType {
+			case layers.DHCPv6MsgTypeSolicit:
 
-	udp := pkt.Layer(layers.LayerTypeUDP).(*layers.UDP)
-	if udp == nil {
-		return
-	}
+				s.dhcpAdvertise(pkt, d6, eth.SrcMAC)
 
-	// we just got a dhcp6 packet?
-	if err = dhcp.UnmarshalBinary(udp.Payload); err == nil {
-		eth := pkt.Layer(layers.LayerTypeEthernet).(*layers.Ethernet)
-		switch dhcp.MessageType {
-		case dhcp6.MessageTypeSolicit:
+			case layers.DHCPv6MsgTypeRequest:
+				if s.duidMatches(d6) {
+					s.dhcpReply("request", pkt, d6, eth.SrcMAC)
+				}
 
-			s.dhcpAdvertise(pkt, dhcp, eth.SrcMAC)
-
-		case dhcp6.MessageTypeRequest:
-			if s.duidMatches(dhcp) {
-				s.dhcpReply("request", pkt, dhcp, eth.SrcMAC)
-			}
-
-		case dhcp6.MessageTypeRenew:
-			if s.duidMatches(dhcp) {
-				s.dhcpReply("renew", pkt, dhcp, eth.SrcMAC)
+			case layers.DHCPv6MsgTypeRenew:
+				if s.duidMatches(d6) {
+					s.dhcpReply("renew", pkt, d6, eth.SrcMAC)
+				}
 			}
 		}
 	}

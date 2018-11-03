@@ -8,7 +8,6 @@ package layers
 
 import (
 	"encoding/binary"
-	"errors"
 
 	"github.com/google/gopacket"
 )
@@ -53,25 +52,19 @@ func (gn *Geneve) LayerType() gopacket.LayerType { return LayerTypeGeneve }
 func decodeGeneveOption(data []byte, gn *Geneve) (*GeneveOption, uint8) {
 	opt := &GeneveOption{}
 
-	opt.Class = binary.BigEndian.Uint16(data[0:2])
+	opt.Class = binary.BigEndian.Uint16(data[0:1])
 	opt.Type = data[2]
 	opt.Flags = data[3] >> 4
-	opt.Length = (data[3]&0xf)*4 + 4
+	opt.Length = data[3] & 0xf
 
-	opt.Data = make([]byte, opt.Length-4)
 	copy(opt.Data, data[4:opt.Length])
 
-	return opt, opt.Length
+	return opt, 4 + opt.Length
 }
 
 func (gn *Geneve) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	if len(data) < 7 {
-		df.SetTruncated()
-		return errors.New("geneve packet too short")
-	}
-
 	gn.Version = data[0] >> 7
-	gn.OptionsLength = (data[0] & 0x3f) * 4
+	gn.OptionsLength = data[0] & 0x3f
 
 	gn.OAMPacket = data[1]&0x80 > 0
 	gn.CriticalOption = data[1]&0x40 > 0
@@ -81,17 +74,12 @@ func (gn *Geneve) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error
 	copy(buf[1:], data[4:7])
 	gn.VNI = binary.BigEndian.Uint32(buf[:])
 
-	offset, length := uint8(8), int32(gn.OptionsLength)
-	if len(data) < int(length+7) {
-		df.SetTruncated()
-		return errors.New("geneve packet too short")
-	}
-
+	offset, length := uint8(8), gn.OptionsLength
 	for length > 0 {
 		opt, len := decodeGeneveOption(data[offset:], gn)
 		gn.Options = append(gn.Options, opt)
 
-		length -= int32(len)
+		length -= len
 		offset += len
 	}
 

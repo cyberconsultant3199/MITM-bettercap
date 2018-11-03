@@ -71,8 +71,8 @@
     "zip",
   ]
   pruneopts = "UT"
-  revision = "3d8400c74f9dbc626d913e0575cda05d914bea57"
-  version = "v1.9.1"
+  revision = "05aa0b30334a79a11bc2072179722d6de727490e"
+  version = "v1.9.2"
 
 [[projects]]
   branch = "master"
@@ -108,7 +108,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:65e00adfb37f64ce3c24f139bc73db70bfe45224ebaf88250eff4038e32ac9cf"
+  digest = "1:eebcd2c096c6e4dada58e468e794146753d035fed7150cc0e2ff79ef28650709"
   name = "github.com/google/gopacket"
   packages = [
     ".",
@@ -117,7 +117,8 @@
     "pcapgo",
   ]
   pruneopts = "UT"
-  revision = "d67ddb98d5a1b7c79a8977ec2d552e1db45eda86"
+  revision = "a6b099ece4680a8bdea84fa78166d0712108a95c"
+  version = "v1.1.15"
 
 [[projects]]
   digest = "1:c79fb010be38a59d657c48c6ba1d003a8aa651fa56b579d959d74573b7dff8e1"
@@ -185,7 +186,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a55df695568f48d84d2b5c3d250871bb9f74d9950c201190b6615a4f94727e3c"
+  digest = "1:2da1cb673de7560298865bd375e6fd4b159a8b2ad3ddc73abe4cad5b788625d7"
   name = "github.com/mdlayher/dhcp6"
   packages = [
     ".",
@@ -193,15 +194,15 @@
     "internal/buffer",
   ]
   pruneopts = "UT"
-  revision = "e26af0688e455a82b14ebdbecf43f87ead3c4624"
+  revision = "2bacd53c1bf6fafa2d182a34f018f6f18acf79d1"
 
 [[projects]]
   branch = "master"
-  digest = "1:6569c2877d56f921a8a459d182af16b700c0e588c94b9938aef0d15d13d596db"
+  digest = "1:450f3a64f7a76d3f229ff33a30f0a889629dde46b0f82ece7c53404528316665"
   name = "github.com/mdlayher/raw"
   packages = ["."]
   pruneopts = "UT"
-  revision = "67a536258490ec29bca6d465b51dea32c0db3623"
+  revision = "fa5ef3332ca961deab5782da07b1616fea8a9dd8"
 
 [[projects]]
   branch = "master"
@@ -257,15 +258,15 @@
   name = "golang.org/x/net"
   packages = ["bpf"]
   pruneopts = "UT"
-  revision = "49bb7cea24b1df9410e1712aa6433dae904ff66a"
+  revision = "c10e9556a7bc0e7c942242b606f0acf024ad5d6a"
 
 [[projects]]
   branch = "master"
-  digest = "1:0a40b0bdd57a93e741d8557465be3a2edeec408e9b6399586ad65bbe8e355796"
+  digest = "1:35560529f5721d65f36dc23aa15fbf7306c5091cdc3f29f65881af5031b80cc8"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "fa43e7bc11baaae89f3f902b2b4d832b68234844"
+  revision = "9b800f95dbbc54abff0acf7ee32d88ba4e328c89"
 
 [[projects]]
   digest = "1:9935525a8c49b8434a0b0a54e1980e94a6fae73aaff45c5d33ba8dff69de123e"
